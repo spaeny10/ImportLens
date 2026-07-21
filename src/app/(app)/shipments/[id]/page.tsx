@@ -68,7 +68,22 @@ export default async function ShipmentPage({ params }: { params: Promise<{ id: s
           <Field label="House BOL" value={s.houseBolNumber} />
           <Field label="Bill type" value={s.billTypeCode} />
           <Field label="Carrier (SCAC)" value={s.carrierCode} />
-          <Field label="Vessel" value={`${s.vesselName ?? "—"}${s.vesselCountryCode ? ` (${s.vesselCountryCode})` : ""}`} />
+          <Field
+            label="Vessel"
+            value={
+              s.vesselName ? (
+                <Link
+                  href={`/vessels/${encodeURIComponent(s.vesselName)}`}
+                  className="text-sky-400 hover:underline"
+                >
+                  {s.vesselName}
+                  {s.vesselCountryCode ? ` (${s.vesselCountryCode})` : ""}
+                </Link>
+              ) : (
+                "—"
+              )
+            }
+          />
           <Field label="Voyage" value={s.voyageNumber} />
           <Field label="Place of receipt" value={s.placeOfReceipt} />
           <Field label="Foreign port of lading" value={s.foreignPortOfLading} />

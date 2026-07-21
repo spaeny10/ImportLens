@@ -14,6 +14,7 @@ export interface ShipmentSearchParams {
   hs?: string; // HS code prefix
   port?: string; // US port of unlading
   origin?: string; // foreign port of lading
+  vessel?: string; // exact vessel name
   from?: string; // YYYY-MM-DD
   to?: string;
   page?: number;
@@ -50,6 +51,7 @@ function shipmentConditions(p: ShipmentSearchParams): SQL[] {
   }
   if (p.port?.trim()) conds.push(eq(s.portOfUnlading, p.port.trim()));
   if (p.origin?.trim()) conds.push(eq(s.foreignPortOfLading, p.origin.trim()));
+  if (p.vessel?.trim()) conds.push(eq(s.vesselName, p.vessel.trim()));
   if (p.from?.trim()) conds.push(gte(s.arrivalDate, p.from.trim()));
   if (p.to?.trim()) conds.push(lte(s.arrivalDate, p.to.trim()));
   return conds;
@@ -224,6 +226,99 @@ export async function getCompanyProfile(id: number) {
     partners: partners.rows as { id: number; name: string; country_code: string | null; shipments: number }[],
     topHs: topHs.rows as { chapter: string; shipments: number }[],
     recent,
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Vessels
+// ---------------------------------------------------------------------------
+export async function getVesselStats(name: string) {
+  const db = await getDb();
+  const s = schema.shipments;
+  const [totals, routes, recent] = await Promise.all([
+    db.execute(sql`
+      SELECT count(*)::int AS shipments,
+             sum(weight_kg)::bigint AS weight_kg,
+             sum(container_count)::int AS containers,
+             max(arrival_date)::text AS last_arrival,
+             mode() WITHIN GROUP (ORDER BY carrier_code) AS carrier_code
+      FROM shipments WHERE vessel_name = ${name}
+    `),
+    db.execute(sql`
+      SELECT foreign_port_of_lading AS origin, port_of_unlading AS destination,
+             count(*)::int AS shipments
+      FROM shipments WHERE vessel_name = ${name}
+      GROUP BY 1, 2 ORDER BY 3 DESC LIMIT 8
+    `),
+    db
+      .select({
+        id: s.id,
+        arrivalDate: s.arrivalDate,
+        consigneeName: s.consigneeName,
+        shipperName: s.shipperName,
+        consigneeCompanyId: s.consigneeCompanyId,
+        shipperCompanyId: s.shipperCompanyId,
+        portOfUnlading: s.portOfUnlading,
+        foreignPortOfLading: s.foreignPortOfLading,
+        descriptionSummary: s.descriptionSummary,
+        weightKg: s.weightKg,
+        containerCount: s.containerCount,
+        carrierCode: s.carrierCode,
+      })
+      .from(s)
+      .where(eq(s.vesselName, name))
+      .orderBy(desc(s.arrivalDate))
+      .limit(10),
+  ]);
+  const t = totals.rows[0] as {
+    shipments: number;
+    weight_kg: number | null;
+    containers: number | null;
+    last_arrival: string | null;
+    carrier_code: string | null;
+  };
+  if (!t || t.shipments === 0) return null;
+  return {
+    totals: t,
+    routes: routes.rows as { origin: string | null; destination: string | null; shipments: number }[],
+    recent: recent as ShipmentRow[],
+  };
+}
+
+export async function getPortStats(port: string) {
+  const db = await getDb();
+  const [totals, topConsignees, monthly] = await Promise.all([
+    db.execute(sql`
+      SELECT count(*)::int AS shipments,
+             sum(weight_kg)::bigint AS weight_kg,
+             sum(container_count)::int AS containers,
+             count(*) FILTER (
+               WHERE arrival_date >= (SELECT max(arrival_date) FROM shipments) - INTERVAL '60 days'
+             )::int AS recent_shipments
+      FROM shipments WHERE port_of_unlading = ${port}
+    `),
+    db.execute(sql`
+      SELECT c.id, c.name, count(*)::int AS shipments
+      FROM shipments s JOIN companies c ON c.id = s.consignee_company_id
+      WHERE s.port_of_unlading = ${port}
+      GROUP BY c.id, c.name ORDER BY shipments DESC LIMIT 8
+    `),
+    db.execute(sql`
+      SELECT to_char(arrival_date, 'YYYY-MM') AS month, count(*)::int AS shipments,
+             sum(weight_kg)::bigint AS weight_kg
+      FROM shipments WHERE port_of_unlading = ${port}
+      GROUP BY 1 ORDER BY 1
+    `),
+  ]);
+  return {
+    totals: totals.rows[0] as {
+      shipments: number;
+      weight_kg: number | null;
+      containers: number | null;
+      recent_shipments: number;
+    },
+    topConsignees: topConsignees.rows as { id: number; name: string; shipments: number }[],
+    monthly: monthly.rows as { month: string; shipments: number; weight_kg: number }[],
   };
 }
 

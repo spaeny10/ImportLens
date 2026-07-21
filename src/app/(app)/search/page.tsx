@@ -19,6 +19,7 @@ export default async function SearchPage({ searchParams }: { searchParams: Promi
     hs: one(sp.hs),
     port: one(sp.port),
     origin: one(sp.origin),
+    vessel: one(sp.vessel),
     from: one(sp.from),
     to: one(sp.to),
   };

@@ -38,6 +38,12 @@ export function SearchFilters({
 
   return (
     <form method="GET" action="/search" className="rounded-xl border border-slate-800 bg-slate-900 p-5">
+      {defaults.vessel && (
+        <p className="mb-3 text-sm text-slate-400">
+          Filtered to vessel <span className="font-semibold text-slate-200">{defaults.vessel}</span>
+          <input type="hidden" name="vessel" value={defaults.vessel} />
+        </p>
+      )}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <div className="sm:col-span-2">
           <label htmlFor="q" className={label}>Product / cargo description</label>
@@ -146,5 +152,6 @@ function suggestName(d: Record<string, string | undefined>): string {
   if (d.hs) parts.push(`HS ${d.hs}`);
   if (d.origin) parts.push(`ex ${d.origin.split(",")[0]}`);
   if (d.port) parts.push(`via ${d.port.split(",")[0]}`);
+  if (d.vessel) parts.push(`on ${d.vessel}`);
   return parts.join(" ") || "All shipments";
 }

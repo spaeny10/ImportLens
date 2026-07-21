@@ -15,6 +15,7 @@ const FILTER_LABELS: Record<string, string> = {
   hs: "HS",
   port: "U.S. port",
   origin: "Origin",
+  vessel: "Vessel",
   from: "From",
   to: "To",
 };
