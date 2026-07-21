@@ -63,7 +63,11 @@ async function createDb(): Promise<Db> {
 export function getDb(): Promise<Db> {
   const g = globalThis as DbGlobal;
   if (!g.__importappDb) {
-    g.__importappDb = createDb();
+    // Don't cache a failed init — let the next request retry the connection.
+    g.__importappDb = createDb().catch((e) => {
+      g.__importappDb = undefined;
+      throw e;
+    });
   }
   return g.__importappDb;
 }
