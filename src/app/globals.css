@@ -5,8 +5,115 @@
   --font-mono: var(--font-geist-mono);
 }
 
+/* ---------------------------------------------------------------------------
+   Themes. Tailwind v4 utilities resolve through --color-* variables, so each
+   theme re-maps the slate surface scale, the sky accent scale, and "white"
+   (headline ink). Chart/map tokens (--viz-*) ride along. "navy" = defaults.
+--------------------------------------------------------------------------- */
+:root {
+  --viz-series: #3987e5;
+  --viz-grid: #1e293b;
+  --viz-axis: #334155;
+  --viz-muted: #64748b;
+  --viz-tooltip-bg: #0f172a;
+  --viz-tooltip-border: #334155;
+  --viz-tooltip-text: #e2e8f0;
+}
+
+[data-theme="light"] {
+  --color-slate-950: #eef2f6;
+  --color-slate-900: #ffffff;
+  --color-slate-800: #e2e8f0;
+  --color-slate-700: #cbd5e1;
+  --color-slate-600: #94a3b8;
+  --color-slate-500: #64748b;
+  --color-slate-400: #475569;
+  --color-slate-300: #334155;
+  --color-slate-200: #1e293b;
+  --color-white: #0f172a;
+  --color-sky-300: #0369a1;
+  --color-sky-400: #0284c7;
+  --color-sky-500: #0ea5e9;
+  --viz-series: #2a78d6;
+  --viz-grid: #e2e8f0;
+  --viz-axis: #cbd5e1;
+  --viz-muted: #64748b;
+  --viz-tooltip-bg: #ffffff;
+  --viz-tooltip-border: #cbd5e1;
+  --viz-tooltip-text: #1e293b;
+}
+
+[data-theme="terminal"] {
+  --color-slate-950: #050505;
+  --color-slate-900: #0a0f0a;
+  --color-slate-800: #1a241a;
+  --color-slate-700: #2c3a2c;
+  --color-slate-600: #445544;
+  --color-slate-500: #5c705c;
+  --color-slate-400: #7d947d;
+  --color-slate-300: #a3b8a3;
+  --color-slate-200: #c2d6c2;
+  --color-white: #e8f5e8;
+  --color-sky-300: #86efac;
+  --color-sky-400: #4ade80;
+  --color-sky-500: #16a34a;
+  --viz-series: #22c55e;
+  --viz-grid: #1a241a;
+  --viz-axis: #2c3a2c;
+  --viz-muted: #5c705c;
+  --viz-tooltip-bg: #0a0f0a;
+  --viz-tooltip-border: #2c3a2c;
+  --viz-tooltip-text: #c2d6c2;
+}
+
+[data-theme="violet"] {
+  --color-slate-950: #0b0716;
+  --color-slate-900: #150e26;
+  --color-slate-800: #251a3d;
+  --color-slate-700: #3b2d5c;
+  --color-slate-600: #5b4b85;
+  --color-slate-500: #7c6f9e;
+  --color-slate-400: #9b8ec4;
+  --color-slate-300: #b7abd9;
+  --color-slate-200: #d5cdeb;
+  --color-white: #f4f1fc;
+  --color-sky-300: #c4b5fd;
+  --color-sky-400: #a78bfa;
+  --color-sky-500: #8b5cf6;
+  --viz-series: #a78bfa;
+  --viz-grid: #251a3d;
+  --viz-axis: #3b2d5c;
+  --viz-muted: #7c6f9e;
+  --viz-tooltip-bg: #150e26;
+  --viz-tooltip-border: #3b2d5c;
+  --viz-tooltip-text: #d5cdeb;
+}
+
+[data-theme="harbor"] {
+  --color-slate-950: #04121f;
+  --color-slate-900: #0a1e30;
+  --color-slate-800: #173248;
+  --color-slate-700: #274763;
+  --color-slate-600: #3f6081;
+  --color-slate-500: #5d7d99;
+  --color-slate-400: #7e9cb5;
+  --color-slate-300: #a3bccf;
+  --color-slate-200: #cfdde8;
+  --color-white: #f2f7fb;
+  --color-sky-300: #fcd34d;
+  --color-sky-400: #fbbf24;
+  --color-sky-500: #d97706;
+  --viz-series: #fbbf24;
+  --viz-grid: #173248;
+  --viz-axis: #274763;
+  --viz-muted: #5d7d99;
+  --viz-tooltip-bg: #0a1e30;
+  --viz-tooltip-border: #274763;
+  --viz-tooltip-text: #cfdde8;
+}
+
 body {
-  background: #020617; /* slate-950 */
-  color: #e2e8f0; /* slate-200 */
+  background: var(--color-slate-950);
+  color: var(--color-slate-200);
   font-family: var(--font-geist-sans), system-ui, -apple-system, "Segoe UI", sans-serif;
 }

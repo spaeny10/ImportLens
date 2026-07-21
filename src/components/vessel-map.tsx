@@ -7,6 +7,8 @@ import type { Map as LeafletMap } from "leaflet";
 import "leaflet/dist/leaflet.css";
 import type { VesselPosition } from "../lib/ais/types";
 import { fmtDate, fmtInt } from "../lib/format";
+import { themeIsDark } from "../lib/themes";
+import { useTheme } from "./theme-switcher";
 
 // Leaflet touches `window` at import time — everything map-shaped loads
 // client-side only.
@@ -15,9 +17,14 @@ const TileLayer = dynamic(() => import("react-leaflet").then((m) => m.TileLayer)
 const Marker = dynamic(() => import("react-leaflet").then((m) => m.Marker), { ssr: false });
 const Popup = dynamic(() => import("react-leaflet").then((m) => m.Popup), { ssr: false });
 
-const TILE_URL = "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png";
 const TILE_ATTR =
   '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>';
+
+function useTileUrl(): string {
+  const theme = useTheme();
+  const variant = themeIsDark(theme) ? "dark_all" : "light_all";
+  return `https://{s}.basemaps.cartocdn.com/${variant}/{z}/{x}/{y}{r}.png`;
+}
 
 function useShipIcon() {
   const [leaflet, setLeaflet] = useState<typeof import("leaflet") | null>(null);
@@ -27,13 +34,13 @@ function useShipIcon() {
   return useMemo(() => {
     if (!leaflet) return null;
     return (cog: number, moving: boolean, live: boolean) => {
-      const color = live ? "#34d399" : "#3987e5";
+      const fill = live ? "fill:#34d399" : "fill:var(--viz-series)";
       const html = moving
         ? `<svg width="26" height="26" viewBox="-13 -13 26 26" style="transform: rotate(${cog}deg)">
-             <path d="M0,-9 L5,7 L0,4 L-5,7 Z" fill="${color}" stroke="#0f172a" stroke-width="1.2"/>
+             <path d="M0,-9 L5,7 L0,4 L-5,7 Z" style="${fill};stroke:var(--viz-tooltip-bg)" stroke-width="1.2"/>
            </svg>`
         : `<svg width="26" height="26" viewBox="-13 -13 26 26">
-             <circle r="4.5" fill="${color}" stroke="#0f172a" stroke-width="1.5"/>
+             <circle r="4.5" style="${fill};stroke:var(--viz-tooltip-bg)" stroke-width="1.5"/>
            </svg>`;
       return leaflet.divIcon({ html, className: "", iconSize: [26, 26], iconAnchor: [13, 13] });
     };
@@ -105,6 +112,7 @@ export function FleetMapPanel() {
   const positions = useFleetPositions();
   const mapRef = useRef<LeafletMap | null>(null);
   const [filter, setFilter] = useState("");
+  const tileUrl = useTileUrl();
 
   const shown = useMemo(() => {
     if (!positions) return [];
@@ -167,7 +175,7 @@ export function FleetMapPanel() {
           ref={mapRef}
           worldCopyJump
         >
-          <TileLayer url={TILE_URL} attribution={TILE_ATTR} />
+          <TileLayer key={tileUrl} url={tileUrl} attribution={TILE_ATTR} />
           {positions && <VesselMarkers positions={positions} />}
         </MapContainer>
       </div>
@@ -177,12 +185,13 @@ export function FleetMapPanel() {
 
 export function SingleVesselMap({ name }: { name: string }) {
   const positions = useFleetPositions();
+  const tileUrl = useTileUrl();
   const v = positions?.find((p) => p.name.toUpperCase() === name.toUpperCase());
   return (
     <div className="h-[420px] overflow-hidden rounded-xl border border-slate-800">
       {v ? (
         <MapContainer center={[v.lat, v.lon]} zoom={4} minZoom={2} className="h-full w-full" worldCopyJump>
-          <TileLayer url={TILE_URL} attribution={TILE_ATTR} />
+          <TileLayer key={tileUrl} url={tileUrl} attribution={TILE_ATTR} />
           <VesselMarkers positions={[v]} />
         </MapContainer>
       ) : (

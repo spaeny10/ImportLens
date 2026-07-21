@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { logout } from "../app/(auth)/actions";
+import { ThemeSwitcher } from "./theme-switcher";
 
 const LINKS = [
   { href: "/", label: "Dashboard" },
@@ -42,6 +43,7 @@ export function Nav({ userName }: { userName: string }) {
         </nav>
         <div className="flex items-center gap-3">
           <span className="hidden text-sm text-slate-400 sm:inline">{userName}</span>
+          <ThemeSwitcher />
           <form action={logout}>
             <button
               type="submit"

@@ -77,8 +77,11 @@ export function RankedBars({
           </div>
           <div className="h-1.5 rounded-full bg-slate-800">
             <div
-              className="h-1.5 rounded-full bg-[#3987e5]"
-              style={{ width: `${(i.value / max) * 100}%` }}
+              className="h-1.5 rounded-full"
+              style={{
+                width: `${(i.value / max) * 100}%`,
+                backgroundColor: "var(--viz-series)",
+              }}
             />
           </div>
         </li>
