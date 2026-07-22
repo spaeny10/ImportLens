@@ -18,7 +18,7 @@ import { useTheme } from "./theme-switcher";
 // Chart chrome follows the active theme via the --viz-* CSS variables.
 // Recharts writes colors as SVG attributes (where var() doesn't resolve),
 // so tokens are read from computed styles and re-read on theme change.
-interface VizTokens {
+export interface VizTokens {
   series: string;
   grid: string;
   axis: string;
@@ -26,6 +26,7 @@ interface VizTokens {
   tooltipBg: string;
   tooltipBorder: string;
   tooltipText: string;
+  cat: string[];
 }
 
 const FALLBACK: VizTokens = {
@@ -36,9 +37,10 @@ const FALLBACK: VizTokens = {
   tooltipBg: "#0f172a",
   tooltipBorder: "#334155",
   tooltipText: "#e2e8f0",
+  cat: ["#3987e5", "#008300", "#d55181", "#c98500", "#199e70", "#d95926"],
 };
 
-function useVizTokens(): VizTokens {
+export function useVizTokens(): VizTokens {
   const theme = useTheme();
   const [tokens, setTokens] = useState(FALLBACK);
   useEffect(() => {
@@ -53,6 +55,7 @@ function useVizTokens(): VizTokens {
       tooltipBg: read("--viz-tooltip-bg", FALLBACK.tooltipBg),
       tooltipBorder: read("--viz-tooltip-border", FALLBACK.tooltipBorder),
       tooltipText: read("--viz-tooltip-text", FALLBACK.tooltipText),
+      cat: FALLBACK.cat.map((c, i) => read(`--viz-cat-${i + 1}`, c)),
     });
   }, [theme]);
   return tokens;

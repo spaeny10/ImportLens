@@ -390,6 +390,101 @@ export async function getDashboardStats() {
 }
 
 // ---------------------------------------------------------------------------
+// BI analytics dashboard (filterable)
+// ---------------------------------------------------------------------------
+export interface BiFilter {
+  port?: string;
+  rangeDays?: number; // window ending at the dataset's latest arrival date
+}
+
+function biWhere(f: BiFilter): SQL {
+  const conds: SQL[] = [sql`1=1`];
+  if (f.port) conds.push(sql`s.port_of_unlading = ${f.port}`);
+  if (f.rangeDays) {
+    conds.push(
+      sql`s.arrival_date >= (SELECT max(arrival_date) FROM shipments) - make_interval(days => ${f.rangeDays})`
+    );
+  }
+  return sql.join(conds, sql` AND `);
+}
+
+export async function getBiAnalytics(f: BiFilter) {
+  const db = await getDb();
+  const where = biWhere(f);
+
+  const [kpis, byCarrier, byChapter, heatmap, topImporters, portShares, monthly, maxDate] =
+    await Promise.all([
+      db.execute(sql`
+        SELECT count(*)::int AS shipments,
+               coalesce(sum(s.container_count), 0)::int AS containers,
+               coalesce(sum(s.weight_kg), 0)::bigint AS weight_kg,
+               count(DISTINCT s.consignee_company_id)::int AS importers,
+               count(DISTINCT s.vessel_name)::int AS vessels
+        FROM shipments s WHERE ${where}
+      `),
+      db.execute(sql`
+        SELECT s.carrier_code AS carrier, count(*)::int AS shipments
+        FROM shipments s WHERE ${where} AND s.carrier_code IS NOT NULL
+        GROUP BY 1 ORDER BY 2 DESC
+      `),
+      db.execute(sql`
+        SELECT substring(t.hs_number, 1, 2) AS chapter, count(DISTINCT s.id)::int AS shipments
+        FROM shipments s JOIN tariffs t ON t.shipment_id = s.id
+        WHERE ${where} AND t.hs_number IS NOT NULL
+        GROUP BY 1 ORDER BY 2 DESC LIMIT 12
+      `),
+      db.execute(sql`
+        WITH top_chapters AS (
+          SELECT substring(t.hs_number, 1, 2) AS chapter
+          FROM shipments s JOIN tariffs t ON t.shipment_id = s.id
+          WHERE ${where} AND t.hs_number IS NOT NULL
+          GROUP BY 1 ORDER BY count(DISTINCT s.id) DESC LIMIT 7
+        )
+        SELECT s.port_of_unlading AS port, substring(t.hs_number, 1, 2) AS chapter,
+               count(DISTINCT s.id)::int AS shipments
+        FROM shipments s JOIN tariffs t ON t.shipment_id = s.id
+        WHERE ${where} AND substring(t.hs_number, 1, 2) IN (SELECT chapter FROM top_chapters)
+        GROUP BY 1, 2
+      `),
+      db.execute(sql`
+        SELECT c.id, c.name, count(*)::int AS shipments
+        FROM shipments s JOIN companies c ON c.id = s.consignee_company_id
+        WHERE ${where}
+        GROUP BY c.id, c.name ORDER BY shipments DESC LIMIT 8
+      `),
+      db.execute(sql`
+        SELECT s.port_of_unlading AS port, count(*)::int AS shipments
+        FROM shipments s WHERE ${where} AND s.port_of_unlading IS NOT NULL
+        GROUP BY 1 ORDER BY 2 DESC LIMIT 5
+      `),
+      db.execute(sql`
+        SELECT to_char(s.arrival_date, 'YYYY-MM') AS month, count(*)::int AS shipments,
+               sum(s.weight_kg)::bigint AS weight_kg
+        FROM shipments s WHERE ${where}
+        GROUP BY 1 ORDER BY 1
+      `),
+      db.execute(sql`SELECT max(arrival_date)::text AS max_date FROM shipments`),
+    ]);
+
+  return {
+    kpis: kpis.rows[0] as {
+      shipments: number;
+      containers: number;
+      weight_kg: number;
+      importers: number;
+      vessels: number;
+    },
+    byCarrier: byCarrier.rows as { carrier: string; shipments: number }[],
+    byChapter: byChapter.rows as { chapter: string; shipments: number }[],
+    heatmap: heatmap.rows as { port: string; chapter: string; shipments: number }[],
+    topImporters: topImporters.rows as { id: number; name: string; shipments: number }[],
+    portShares: portShares.rows as { port: string; shipments: number }[],
+    monthly: monthly.rows as { month: string; shipments: number; weight_kg: number }[],
+    maxDate: (maxDate.rows[0] as { max_date: string | null }).max_date,
+  };
+}
+
+// ---------------------------------------------------------------------------
 // Saved searches & watchlist
 // ---------------------------------------------------------------------------
 export async function getSavedSearches(userId: number) {
