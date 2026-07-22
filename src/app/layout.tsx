@@ -1,7 +1,8 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { cookies } from "next/headers";
 import { DEFAULT_THEME, THEME_COOKIE, isValidTheme } from "../lib/themes";
+import { ServiceWorkerRegister } from "../components/sw-register";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -18,6 +19,24 @@ export const metadata: Metadata = {
   title: "ImportLens — U.S. Import Trade Intelligence",
   description:
     "Search U.S. customs bill of lading data: shipments, importers, suppliers, and trade analytics.",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "ImportLens",
+  },
+  icons: {
+    icon: [
+      { url: "/icons/icon-192.png", sizes: "192x192", type: "image/png" },
+      { url: "/icons/icon-512.png", sizes: "512x512", type: "image/png" },
+    ],
+    apple: "/icons/apple-touch-icon.png",
+  },
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  themeColor: "#020617",
 };
 
 export default async function RootLayout({
@@ -34,7 +53,10 @@ export default async function RootLayout({
       data-theme={theme}
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col">{children}</body>
+      <body className="min-h-full flex flex-col">
+        {children}
+        <ServiceWorkerRegister />
+      </body>
     </html>
   );
 }
